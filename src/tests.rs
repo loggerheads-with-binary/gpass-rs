@@ -3,15 +3,14 @@ use crate::*;
 #[test]
 fn test_mask() -> Result<(), Box<dyn std::error::Error>> {
     let mask = masks::Standard::new(masks::DEFAULT_MASK_CHAR);
-    let mut gpass = GPass {
+    let _gpass = GPass {
         input_stream: Box::new(Getch::new()),
         mask: Box::new(mask),
         output_stream: Box::new(std::io::stderr()),
-        ctrl_c_abort: false,
         prompt: "Enter Password Here: ".to_string(),
+        ..Default::default()
     };
 
-    gpass.ctrl_c_abort = true;
     Ok(())
 }
 
@@ -26,7 +25,7 @@ fn test_input_functionality() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(input_stream),
         Box::new(masks::Echo::default()),
         Box::new(output_stream),
-        false,
+        false
     );
 
     let password2 = gpass.get_password()?;
@@ -51,7 +50,7 @@ fn test_input_file() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(input_stream),
         Box::new(masks::Echo::default()),
         Box::new(std::io::stderr()),
-        false,
+        false    
     );
 
     let password2 = gpass.get_password()?;
