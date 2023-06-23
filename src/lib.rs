@@ -58,11 +58,8 @@ pub enum LibError {
     ForeignLibrary(Box<dyn std::error::Error>),
 }
 
-impl Default for LibError {
-    fn default() -> Self {
-        Self::Other("Undefined".into())
-    }
-}
+pub mod error_make;
+
 
 impl std::fmt::Display for LibError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

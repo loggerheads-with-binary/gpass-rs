@@ -1,5 +1,8 @@
 #Default cargo targets 
 /target
+/gpass-bin/target 
+/gpass-bin/Cargo.lock 
+Cargo.lock 
 
 #VSCode folders 
 *.code-workspace

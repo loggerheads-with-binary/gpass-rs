@@ -54,14 +54,18 @@ pub fn mask_from_env(
     converters: &[fn(&str) -> Option<Box<dyn Mask>>],
 ) -> Option<Box<dyn Mask>> {
     let mask = std::env::var(env_var);
-    if mask.is_err() {
-        return None;
+    match mask{
+        Ok(val) => mask_from_str(&val , converters),
+        Err(_) => None
     }
+}
 
-    let mask = mask.unwrap();
+
+
+pub fn mask_from_str(val: &str,      converters: &[fn(&str) -> Option<Box<dyn Mask>>]) -> Option<Box<dyn Mask>>{
 
     for converter in converters {
-        if let Some(mask) = converter(&mask) {
+        if let Some(mask) = converter(&val) {
             return Some(mask);
         }
     }
@@ -215,7 +219,13 @@ lazy_static::lazy_static! {
 /// 2. `env_mask!("MY_ENV_VAR")` -> Returns from custom env variable<br>
 /// 3. `env_mask!(default = masks::Standard::default()) -> Provide a default in case of fallback <br>
 /// 4. `env_mask!("MY_ENV_VAR" , masks::Standard::default()) -> Provide a default and a custom environment variable<br>
+/// 5. env_mask!(value = "MY_MASK_VALUE") -> For already parsed environments, where the value represents value of the mask(say "standard(**)")<br>
 macro_rules! env_mask {
+    
+    (value = $val : expr) => {
+        mask_from_str($val , &*DEFAULT_CONVERTERS.read().unwrap())
+    };
+    
     () => {
         mask_from_env("GPASS_MASK", &*DEFAULT_CONVERTERS.read().unwrap())
     };

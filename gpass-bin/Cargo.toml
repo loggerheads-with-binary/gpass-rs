@@ -1,5 +1,5 @@
 [package]
-name = "gpass-rs"
+name = "gpassx"
 version = "0.5.5"
 edition = "2021"
 description = "A library+executable to implement a simple multi-functionality secure command-line password input"
@@ -8,22 +8,12 @@ authors = ["Aniruddh Radhakrishnan<aniruddh.iitb.92@gmail.com>"]
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-[lib]
-path = "src/lib.rs"
-crate-type = ["cdylib", "rlib"]
-name = "gpass"
-doctest = false
 
 [dependencies]
-colored = { version = "2.0.0", optional = true}
+clap = { version = "4.3.5", features = ["derive", "env", "wrap_help", "suggestions", "color"] }
 eyre = "0.6.8"
-getch = "0.3.1"
-lazy_static = "1.4.0"
-regex = "1.8.4"
-thiserror = "1.0.40"
+gpass-rs = {path = "../"  , features = [ "env" , "reverse" ]}
 
+# Activate feature gpass-rs "colored" if feature colored is enabled 
 [features]
-colored = ["dep:colored"]
-env = []
-reverse = []
-
+colored = ["gpass-rs/colored"]

@@ -149,7 +149,8 @@ impl Mask for Blind {
         Default::default()
     }
 
-    fn end_password(&self, _o: &mut dyn std::io::Write) -> Result<(), String> {
+    fn end_password(&self, o: &mut dyn std::io::Write) -> Result<(), String> {
+        writeln!(o , "").map_err(|e| e.to_string())?;
         Ok(())
     }
 
