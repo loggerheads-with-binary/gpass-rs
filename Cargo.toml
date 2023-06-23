@@ -1,0 +1,27 @@
+[package]
+name = "gpass-rs"
+version = "0.5.2"
+edition = "2021"
+description = "A library to implement a simple multi-functionality secure command-line password input"
+repository = "https://www.github.com/loggerheads-with-binary/gpass-rs"
+authors = ["Aniruddh Radhakrishnan<aniruddh.iitb.92@gmail.com>"]
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+name = "gpass"
+
+
+[dependencies]
+colored = { version = "2.0.0", optional = true}
+getch = "0.3.1"
+lazy_static = "1.4.0"
+regex = "1.8.4"
+
+[features]
+colored = ["dep:colored"]
+env = []
+reverse = []
+

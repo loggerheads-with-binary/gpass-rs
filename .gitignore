@@ -1,0 +1,16 @@
+#Default cargo targets 
+/target
+
+#VSCode folders 
+*.code-workspace
+.vscode 
+.vscode-insiders 
+local.json 
+
+#Manual testing files 
+/mantest
+input.txt
+
+#Old source files
+src/getch_implement.rs
+src/output_stream.rs
