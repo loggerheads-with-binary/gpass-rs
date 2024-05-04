@@ -1,6 +1,6 @@
 [package]
 name = "gpass-rs"
-version = "0.5.5"
+version = "0.6.0"
 edition = "2021"
 description = "A library+executable to implement a simple multi-functionality secure command-line password input"
 repository = "https://www.github.com/loggerheads-with-binary/gpass-rs"
