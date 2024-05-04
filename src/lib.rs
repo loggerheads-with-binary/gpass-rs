@@ -2,22 +2,19 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 #![allow(unused_macros)]
-
 #![doc = include_str!("../README.md")]
 
-
-use std::sync::Arc; 
+use std::sync::Arc;
 pub mod masks;
 
 #[cfg(feature = "reverse")]
 pub mod reverse;
 
-
-// mod output_stream; 
+// mod output_stream;
 // pub use output_stream::Output;
 
 mod file_input;
-pub use file_input::{Getch , IString};
+pub use file_input::{Getch, IString};
 
 //Allow users to use macros from env.rs
 #[cfg(feature = "env")]
@@ -59,7 +56,6 @@ pub enum LibError {
 }
 
 pub mod error_make;
-
 
 impl std::fmt::Display for LibError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -121,7 +117,7 @@ pub trait Mask {
 ///     output_stream = Box::new(std::io::stdout),
 ///     ..Default::default()
 /// }
-/// ``` 
+/// ```
 pub struct GPass {
     ///Input stream for the password<br>
     pub input_stream: Box<dyn InputStream>,
@@ -179,7 +175,7 @@ impl GPass {
     }
 
     #[cfg(feature = "colored")]
-    pub fn set_prompt_color(&mut self, c : &str) {
+    pub fn set_prompt_color(&mut self, c: &str) {
         self.prompt_color = Arc::from(c);
     }
 
@@ -189,13 +185,12 @@ impl GPass {
     }
 
     fn prompt_print(&mut self) -> Result<(), std::io::Error> {
-
         let aftermath = match self.prompt.chars().last() {
             Some(ch) if ch.is_ascii_whitespace() => "",
             _ => ": ",
         };
 
-        let prompt = &self.prompt; 
+        let prompt = &self.prompt;
 
         #[cfg(feature = "colored")]
         let prompt = prompt.to_string().color(self.prompt_color.as_ref());
@@ -204,11 +199,19 @@ impl GPass {
 
         // self.output_stream.write(prompt.as_bytes())?;
         // self.output_stream.write(aftermath.as_bytes())?;
-        
-        write!(self.output_stream , "{}" , &prompt)?;
-        write!(self.output_stream , "{}" , &aftermath)?;
-        
+
+        write!(self.output_stream, "{}", &prompt)?;
+        write!(self.output_stream, "{}", &aftermath)?;
+
         Ok(())
+    }
+
+    pub fn set_mask(&mut self, mask: impl Mask + 'static) {
+        self.mask = Box::new(mask);
+    }
+
+    pub fn set_prompt(&mut self, prompt: &str) {
+        self.prompt = prompt.to_string();
     }
 
     pub fn get_password(mut self) -> Result<String, LibError> {
