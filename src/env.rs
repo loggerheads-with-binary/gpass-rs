@@ -16,6 +16,9 @@ pub fn prompt_from_env(env_var: &str, default_prompt: &str) -> String {
     }
 }
 
+const GPASS_DEFAULT_PROMPT: &'static str = "Enter Password Here: ";
+const GPASS_DEFAULT_ENV_VAR: &'static str = "GPASS_PROMPT";
+
 #[macro_export]
 ///Used to get the password prompt eg. "Enter Password Here: " from the environment variables <br>
 ///By default the `GPASS_PROMPT` environment variable is evaluated, and if it is not set, it returns default "Enter Password Here: " <br>
@@ -26,24 +29,21 @@ pub fn prompt_from_env(env_var: &str, default_prompt: &str) -> String {
 /// env_prompt!(default = "My Prompt") : Customize the prompt <br>
 /// env_prompt!("MY_ENV_VAR" , "My Prompt" ) : Customize both <br>
 macro_rules! env_prompt {
-    
-
-
     () => {
-        prompt_from_env("GPASS_PROMPT", "Enter Password Here: ")
+        $crate::env::prompt_from_env(GPASS_DEFAULT_ENV_VAR, GPASS_DEFAULT_PROMPT)
     };
 
     ($prompt : expr , $default : expr) => {
-        prompt_from_env($prompt, $default)
+        $crate::env::prompt_from_env($prompt, $default)
     };
 
     ($prompt : expr ) => {
-        prompt_from_env($prompt, "Enter Password Here: ")
+        $crate::env::prompt_from_env($prompt, GPASS_DEFAULT_PROMPT)
     };
 
     //Add identifier so we can use prompt_from_env!(default = "default")
     (default = $default : expr) => {
-        prompt_from_env("GPASS_PROMPT", $default)
+        $crate::env::prompt_from_env(GPASS_DEFAULT_ENV_VAR, $default)
     };
 }
 
@@ -54,17 +54,21 @@ pub fn mask_from_env(
     converters: &[fn(&str) -> Option<Box<dyn Mask>>],
 ) -> Option<Box<dyn Mask>> {
     let mask = std::env::var(env_var);
-    match mask{
-        Ok(val) => mask_from_str(&val , converters),
-        Err(_) => None
+    match mask {
+        Ok(val) => mask_from_str(&val, Some(converters)),
+        Err(_) => None,
     }
 }
 
+pub fn mask_from_str(
+    val: &str,
+    mut converters: Option<&[fn(&str) -> Option<Box<dyn Mask>>]>,
+) -> Option<Box<dyn Mask>> {
+    if converters.is_none() {
+        converters = Some(&*DEFAULT_CONVERTERS);
+    }
 
-
-pub fn mask_from_str(val: &str,      converters: &[fn(&str) -> Option<Box<dyn Mask>>]) -> Option<Box<dyn Mask>>{
-
-    for converter in converters {
+    for converter in converters.unwrap().iter() {
         if let Some(mask) = converter(&val) {
             return Some(mask);
         }
@@ -78,13 +82,12 @@ pub fn mask_from_str(val: &str,      converters: &[fn(&str) -> Option<Box<dyn Ma
 ///It also matches against Standard(<mask_string>) and Standard[<mask_string>] and Standard{<mask_string>} to return Standard{mask : <mask_string>}<br>
 /// These matches are case insensitive<br>
 pub fn mask_string_get(base_string: &str, check_string: &str) -> Option<String> {
-    
     let re = format!(r"(?i){base_string}");
 
     if Regex::new(re.as_str()).unwrap().is_match(check_string) {
         return Some(crate::masks::DEFAULT_MASK_CHAR.to_string());
     }
-    
+
     let re1 = format!(r"(?i){base_string}\((?P<mask_string>.*)\)");
     let re2 = format!(r"(?i){base_string}\[(?P<mask_string>.*)\]");
     let re3 = format!(r"(?i){base_string}\{{(?P<mask_string>.*)\}}");
@@ -114,7 +117,7 @@ lazy_static::lazy_static! {
     /// Ex: "blind" will be accepted only by the Converter for the Blind mask, none else <br>
     /// A converter shows success by returning Some(variant) and failure by returning None variant <br>
     /// You can also provide your own converters for custom masks <br>
-    pub static ref DEFAULT_CONVERTERS : RwLock<Vec<fn(&str) -> Option<Box<dyn Mask>>>> = {
+    pub static ref DEFAULT_CONVERTERS : Vec<fn(&str) -> Option<Box<dyn Mask>>> = {
 
         let converters : Vec<fn(&str) -> Option<Box<dyn Mask>>> = vec![
 
@@ -138,36 +141,6 @@ lazy_static::lazy_static! {
                     Some(res) => Some(Box::new(crate::masks::Standard::new(&res))),
                     None => None
                 }
-
-                // if s == "standard"{
-                //     return Some(Box::new(crate::masks::Standard::default()))
-                // }
-
-                // //The regular expression formed is such that Standard[..] or Standard(..) or Standard{..}
-                // //Create a single regex that will extract the .. from inside the string
-
-                // for re in [
-                //     r"standard\(?<mask_string>.*\)",
-                //     r"standard\[?<mask_string>.*\]",
-                //     r"standard\{?<mask_string>.*\}",
-                // ]{
-                //     //Extract name from s using regex
-                //     let re = Regex::new(re).unwrap();
-                //     let caps = re.captures(s);
-                //     if caps.is_none(){
-                //         continue;
-                //     }
-                //     let caps = caps.unwrap();
-                //     let mask_string = caps.name("mask_string");
-                //     if mask_string.is_none(){
-                //         continue;
-                //     }
-                //     let mask_string = mask_string.unwrap().as_str();
-                //     return Some(Box::new(crate::masks::Standard::new(mask_string)))
-                // }
-
-
-                // None
             },
 
             #[cfg(feature = "reverse")]
@@ -206,7 +179,7 @@ lazy_static::lazy_static! {
 
         ];
 
-        RwLock::new(converters)
+        converters
     };
 
 }
@@ -221,28 +194,27 @@ lazy_static::lazy_static! {
 /// 4. `env_mask!("MY_ENV_VAR" , masks::Standard::default()) -> Provide a default and a custom environment variable<br>
 /// 5. env_mask!(value = "MY_MASK_VALUE") -> For already parsed environments, where the value represents value of the mask(say "standard(**)")<br>
 macro_rules! env_mask {
-    
     (value = $val : expr) => {
-        mask_from_str($val , &*DEFAULT_CONVERTERS.read().unwrap())
+        mask_from_str($val, &*DEFAULT_CONVERTERS)
     };
-    
+
     () => {
-        mask_from_env("GPASS_MASK", &*DEFAULT_CONVERTERS.read().unwrap())
+        mask_from_env("GPASS_MASK", &*DEFAULT_CONVERTERS)
     };
 
     ($mask : expr) => {
-        mask_from_env($mask, &*DEFAULT_CONVERTERS.read().unwrap())
+        mask_from_env($mask, &*DEFAULT_CONVERTERS)
     };
 
     ($mask : expr, default = $default : expr) => {
-        match mask_from_env($mask, &*DEFAULT_CONVERTERS.read().unwrap()) {
+        match mask_from_env($mask, &*DEFAULT_CONVERTERS) {
             Some(mask) => mask,
             None => Box::new($default),
         }
     };
 
     (default = $default : expr) => {
-        match mask_from_env("GPASS_MASK", &*DEFAULT_CONVERTERS.read().unwrap()) {
+        match mask_from_env("GPASS_MASK", &*DEFAULT_CONVERTERS) {
             Some(mask) => mask,
             None => Box::new($default),
         }
@@ -305,7 +277,7 @@ macro_rules! prompt_env_color {
     (default = $default : expr) => {
         env_color!("GPASS_PROMPT_COLOR", $default)
     };
-    
+
     ($var : expr) => {
         env_color!($var, crate::colors::DEFAULT_PROMPT_COLOR)
     };
